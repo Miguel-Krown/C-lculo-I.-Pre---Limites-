@@ -22,7 +22,11 @@
   .incorrect { color:red; font-weight:bold; }
   button { padding:10px 18px; font-size:16px; cursor:pointer; margin-top:12px; }
   .result { margin-top:14px; font-weight:bold; }
-  label.option { display:block; cursor:pointer; margin:4px 0; }
+  table.options { width:100%; border-collapse: collapse; margin-top:6px; }
+  table.options td { padding:6px; vertical-align:top; }
+  label.option { cursor:pointer; display:inline-block; padding:4px 8px; border-radius:6px; }
+  .option.correctOpt { background:#c8f7c5; } /* verde suave */
+  .option.incorrectOpt { background:#f7c5c5; } /* rojo suave */
 </style>
 </head>
 <body>
@@ -49,7 +53,7 @@ function shuffleArray(arr){
   return a;
 }
 
-// -------- datos (opciones y respuestas en LaTeX exacto) ----------
+// -------- datos ----------
 const quizData = [
   // Factor común (5)
   { section: "Factor Común", example: "6x^2+9x=3x(2x+3)", question: "Factoriza: \\(4x+8\\)", 
@@ -136,11 +140,10 @@ const quizData = [
     solution: "Comprobación: \\((2x+3)(3x+4)=6x^2+8x+9x+12=6x^2+17x+12\\)." }
 ];
 
-// -------- generar HTML (con mezcla aleatoria de opciones) ----------
+// -------- generar HTML (con mezcla aleatoria de opciones y tabla) ----------
 const container = document.getElementById('questions');
 let currentSection = "";
 quizData.forEach((q, idx) => {
-  // si nueva sección, agregar encabezado + ejemplo (solo si ejemplo no vacio)
   if (q.section !== currentSection) {
     currentSection = q.section;
     const sectionDiv = document.createElement('div');
@@ -150,85 +153,75 @@ quizData.forEach((q, idx) => {
     container.appendChild(sectionDiv);
   }
 
-  // mezclar opciones
   const shuffled = shuffleArray(q.options);
-
-  // crear contenedor de pregunta
   const qDiv = document.createElement('div');
   qDiv.className = 'question';
   qDiv.id = `q${idx+1}`;
 
-  // generar HTML de opciones (valor = texto LaTeX exacto)
-  const optsHtml = shuffled.map((opt, j) => {
-    // cada radio value es exactamente la etiqueta LaTeX (ej. "\\(4(x+2)\\)")
-    return `<label class="option"><input type="radio" name="q${idx+1}" value="${opt}"> ${opt}</label>`;
-  }).join('');
+  // construir tabla de opciones en filas de 3 columnas
+  let tableHtml = "<table class='options'><tr>";
+  shuffled.forEach((opt, j) => {
+    if (j>0 && j%3===0) tableHtml += "</tr><tr>";
+    tableHtml += `<td><label class="option"><input type="radio" name="q${idx+1}" value="${opt}"> ${opt}</label></td>`;
+  });
+  tableHtml += "</tr></table>";
 
-  // solución (oculta hasta que se muestre)
   const solutionHtml = q.solution ? `<div class="solution" id="solution${idx+1}">${q.solution}</div>` : '';
 
   qDiv.innerHTML = `<p><strong>${idx+1}.</strong> ${q.question}</p>
-                    ${optsHtml}
+                    ${tableHtml}
                     <div class="feedback" id="feedback${idx+1}"></div>
                     ${solutionHtml}`;
   container.appendChild(qDiv);
 });
 
-// Solicitar a MathJax renderizar el contenido dinámico
-if (window.MathJax && MathJax.typesetPromise) {
-  MathJax.typesetPromise();
-}
+if (window.MathJax && MathJax.typesetPromise) { MathJax.typesetPromise(); }
 
-// -------- verificar respuestas (solo si todas respondidas) ----------
+// -------- verificar respuestas ----------
 document.getElementById('checkBtn').addEventListener('click', function(){
   const total = quizData.length;
-  // verificar que todas las preguntas tengan respuesta seleccionada
   let allAnswered = true;
-  for (let i = 1; i <= total; i++) {
-    const sel = document.querySelector(`input[name="q${i}"]:checked`);
-    if (!sel) { allAnswered = false; break; }
+  for (let i=1; i<=total; i++) {
+    if (!document.querySelector(`input[name="q${i}"]:checked`)) { allAnswered=false; break; }
   }
   const resultDiv = document.getElementById('result');
-  // si falta alguna, mostrar aviso y no calificar ni mostrar soluciones
   if (!allAnswered) {
-    resultDiv.innerHTML = "⚠️ Debes responder <strong>todas</strong> las preguntas antes de verificar. Revisa que no falte ninguna.";
-    // limpiar cualquier feedback/solution anterior
-    for (let i = 1; i <= total; i++) {
-      const fb = document.getElementById(`feedback${i}`);
-      const sol = document.getElementById(`solution${i}`);
-      if (fb) fb.innerHTML = "";
-      if (sol) sol.style.display = 'none';
-    }
+    resultDiv.innerHTML = "⚠️ Debes responder <strong>todas</strong> las preguntas antes de verificar.";
     return;
   }
 
-  // si todas respondidas, calificar y mostrar feedback + soluciones donde corresponda
-  let score = 0;
-  for (let i = 0; i < quizData.length; i++) {
-    const qIndex = i + 1;
-    const selected = document.querySelector(`input[name="q${qIndex}"]:checked`);
-    const selectedValue = selected ? selected.value : null;
-    const feedbackEl = document.getElementById(`feedback${qIndex}`);
-    const solEl = document.getElementById(`solution${qIndex}`);
+  let score=0;
+  for (let i=0; i<quizData.length; i++) {
+    const qIndex=i+1;
+    const selected=document.querySelector(`input[name="q${qIndex}"]:checked`);
+    const selectedVal=selected?selected.value:null;
+    const feedbackEl=document.getElementById(`feedback${qIndex}`);
+    const solEl=document.getElementById(`solution${qIndex}`);
+    const correctAns=quizData[i].answer;
 
-    // comparar con la etiqueta de respuesta (todas usan LaTeX exacto)
-    if (selectedValue === quizData[i].answer) {
+    // quitar colores anteriores
+    document.querySelectorAll(`#q${qIndex} label.option`).forEach(l=>l.classList.remove("correctOpt","incorrectOpt"));
+
+    if (selectedVal===correctAns){
       score++;
-      feedbackEl.innerHTML = `<span class="correct">Correcto ✅</span>`;
-      // ocultar solución por si estaba visible de intento anterior
-      if (solEl) solEl.style.display = 'none';
+      feedbackEl.innerHTML=`<span class="correct">Correcto ✅</span>`;
+      if(solEl) solEl.style.display='none';
+      selected.parentElement.classList.add("correctOpt");
     } else {
-      feedbackEl.innerHTML = `<span class="incorrect">Incorrecto ❌. Se muestra la solución:</span>`;
-      if (solEl) solEl.style.display = 'block';
+      feedbackEl.innerHTML=`<span class="incorrect">Incorrecto ❌. Se muestra la solución:</span>`;
+      if(solEl) solEl.style.display='block';
+      selected.parentElement.classList.add("incorrectOpt");
+      // marcar también la correcta
+      document.querySelectorAll(`#q${qIndex} input`).forEach(r=>{
+        if(r.value===correctAns){
+          r.parentElement.classList.add("correctOpt");
+        }
+      });
     }
   }
 
-  resultDiv.innerHTML = `Tu calificación: <strong>${score}</strong> de <strong>${quizData.length}</strong>.`;
-
-  // volver a renderizar MathJax para mostrar soluciones y etiquetas LaTeX recién añadidas
-  if (window.MathJax && MathJax.typesetPromise) {
-    MathJax.typesetPromise();
-  }
+  resultDiv.innerHTML=`Tu calificación: <strong>${score}</strong> de <strong>${quizData.length}</strong>.`;
+  if (window.MathJax && MathJax.typesetPromise) { MathJax.typesetPromise(); }
 });
 </script>
 
