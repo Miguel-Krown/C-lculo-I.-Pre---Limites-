@@ -1,123 +1,235 @@
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Actividad de Factorización</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Actividad de Factorización — Autoevaluable</title>
+
+<!-- MathJax para render LaTeX -->
 <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 <script id="MathJax-script" async
   src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  .section { margin-bottom: 40px; }
-  .question { margin-bottom: 25px; }
-  .example { background: #eef; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
-  button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin-top: 20px;}
-  .result { font-weight: bold; margin-top: 20px; }
-  .correct { color: green; font-weight: bold; }
-  .incorrect { color: red; font-weight: bold; }
-  .solution { margin-top: 5px; font-style: italic; color: #333; }
+  body { font-family: Arial, sans-serif; margin: 20px; line-height:1.4; }
+  h1 { margin-bottom: 4px; }
+  .section { margin-top: 28px; margin-bottom: 24px; }
+  .example { background:#eef; padding:10px; border-radius:8px; margin-bottom:12px; }
+  .question { margin-bottom:18px; padding:8px 6px; border-radius:6px; }
+  .question p { margin:6px 0; }
+  .feedback { margin-top:6px; }
+  .solution { margin-top:6px; font-style:italic; color:#333; display:none; }
+  .correct { color:green; font-weight:bold; }
+  .incorrect { color:red; font-weight:bold; }
+  button { padding:10px 18px; font-size:16px; cursor:pointer; margin-top:12px; }
+  .result { margin-top:14px; font-weight:bold; }
+  label.option { display:block; cursor:pointer; margin:4px 0; }
 </style>
 </head>
 <body>
 
 <h1>Actividad de Factorización</h1>
-<p>Resuelve todos los ejercicios. Después presiona <b>Verificar respuestas</b> para conocer tu calificación.</p>
+<p>Secciones: <b>Factor común</b>, <b>Diferencia de cuadrados</b>, <b>Trinomios \(x^2+bx+c\)</b>, <b>Trinomios \(ax^2+bx+c\)</b>.  
+Responde todos los ejercicios y luego presiona <b>Verificar respuestas</b>.</p>
 
 <form id="quizForm">
-<div id="questions"></div>
-<button type="button" onclick="checkAnswers()">Verificar respuestas</button>
-<div class="result" id="result"></div>
+  <div id="questions"></div>
+
+  <button type="button" id="checkBtn">Verificar respuestas</button>
+  <div class="result" id="result" aria-live="polite"></div>
 </form>
 
 <script>
-// ==========================
-// BASE DE DATOS DE REACTIVOS
-// ==========================
-const quizData = [
-  // ---------------- FACTOR COMÚN ----------------
-  {section:"Factor Común", example:"\\(6x^2+9x=3x(2x+3)\\)", question:"Factoriza: \\(4x+8\\)", options:["\\(4(x+2)\\)","\\(2(x+4)\\)","\\(8(x+0.5)\\)"], answer:"4(x+2)", solution:"El factor común es 4: \\(4x+8=4(x+2)\\)."},
-  {section:"Factor Común", example:"", question:"Factoriza: \\(15x+20\\)", options:["\\(5(3x+4)\\)","\\(15(x+20)\\)","\\(10(1.5x+2)\\)"], answer:"5(3x+4)", solution:"El factor común es 5: \\(15x+20=5(3x+4)\\)."},
-  {section:"Factor Común", example:"", question:"Factoriza: \\(6xy+9x\\)", options:["\\(3x(2y+3)\\)","\\(6x(y+1.5)\\)","\\(x(6y+9)\\)"], answer:"3x(2y+3)", solution:"El factor común es 3x: \\(6xy+9x=3x(2y+3)\\)."},
-  {section:"Factor Común", example:"", question:"Factoriza: \\(12x^2y+18xy^2\\)", options:["\\(6xy(2x+3y)\\)","\\(3xy(4x+6y)\\)","\\(2xy(6x+9y)\\)"], answer:"6xy(2x+3y)", solution:"El factor común es 6xy: \\(12x^2y+18xy^2=6xy(2x+3y)\\)."},
-  {section:"Factor Común", example:"", question:"Factoriza: \\(20x^3y^2+30x^2y^3\\)", options:["\\(10x^2y^2(2x+3y)\\)","\\(5x^2y^2(4x+6y)\\)","\\(15x^2y^2(1.33x+2y)\\)"], answer:"10x^2y^2(2x+3y)", solution:"El factor común es \\(10x^2y^2\\)."},
-  
-  // ---------------- DIFERENCIA DE CUADRADOS ----------------
-  {section:"Diferencia de Cuadrados", example:"\\(x^2-9=(x-3)(x+3)\\)", question:"Factoriza: \\(x^2-16\\)", options:["\\((x-4)(x+4)\\)","\\((x-2)(x+8)\\)","\\((x-8)(x+2)\\)"], answer:"(x-4)(x+4)", solution:"Es diferencia de cuadrados: \\(x^2-16=(x-4)(x+4)\\)."},
-  {section:"Diferencia de Cuadrados", example:"", question:"Factoriza: \\(25x^2-1\\)", options:["\\((5x-1)(5x+1)\\)","\\((x-5)(x+5)\\)","\\((25x-1)(25x+1)\\)"], answer:"(5x-1)(5x+1)", solution:"Es diferencia de cuadrados: \\(25x^2-1=(5x-1)(5x+1)\\)."},
-  {section:"Diferencia de Cuadrados", example:"", question:"Factoriza: \\(49y^2-81\\)", options:["\\((7y-9)(7y+9)\\)","\\((y-81)(y+81)\\)","\\((49y-81)(49y+81)\\)"], answer:"(7y-9)(7y+9)", solution:"Es diferencia de cuadrados: \\(49y^2-81=(7y-9)(7y+9)\\)."},
-  {section:"Diferencia de Cuadrados", example:"", question:"Factoriza: \\(x^4-25y^2\\)", options:["\\((x^2-5y)(x^2+5y)\\)","\\((x^2-25y)(x^2+25y)\\)","\\((x^2-10y)(x^2+10y)\\)"], answer:"(x^2-5y)(x^2+5y)", solution:"\\(x^4=(x^2)^2\\) y \\(25y^2=(5y)^2\\)."},
-  {section:"Diferencia de Cuadrados", example:"", question:"Factoriza: \\(100a^2b^2-49c^2\\)", options:["\\((10ab-7c)(10ab+7c)\\)","\\((100ab-49c)(100ab+49c)\\)","\\((ab-7c)(ab+7c)\\)"], answer:"(10ab-7c)(10ab+7c)", solution:"\\(100a^2b^2=(10ab)^2\\), \\(49c^2=(7c)^2\\)."},
-  
-  // ---------------- TRINOMIOS x^2+bx+c ----------------
-  {section:"Trinomios forma x^2+bx+c", example:"\\(x^2+5x+6=(x+2)(x+3)\\)", question:"Factoriza: \\(x^2+7x+10\\)", options:["\\((x+2)(x+5)\\)","\\((x+1)(x+10)\\)","\\((x+7)(x+10)\\)"], answer:"(x+2)(x+5)", solution:"Dos números que sumen 7 y multipliquen 10: 2 y 5."},
-  {section:"Trinomios forma x^2+bx+c", example:"", question:"Factoriza: \\(x^2+11x+24\\)", options:["\\((x+3)(x+8)\\)","\\((x+4)(x+6)\\)","\\((x+2)(x+12)\\)"], answer:"(x+3)(x+8)", solution:"3+8=11, 3·8=24."},
-  {section:"Trinomios forma x^2+bx+c", example:"", question:"Factoriza: \\(x^2+9x+20\\)", options:["\\((x+4)(x+5)\\)","\\((x+2)(x+10)\\)","\\((x+1)(x+20)\\)"], answer:"(x+4)(x+5)", solution:"4+5=9, 4·5=20."},
-  {section:"Trinomios forma x^2+bx+c", example:"", question:"Factoriza: \\(x^2+13x+40\\)", options:["\\((x+5)(x+8)\\)","\\((x+4)(x+10)\\)","\\((x+2)(x+20)\\)"], answer:"(x+5)(x+8)", solution:"5+8=13, 5·8=40."},
-  {section:"Trinomios forma x^2+bx+c", example:"", question:"Factoriza: \\(x^2+14x+45\\)", options:["\\((x+5)(x+9)\\)","\\((x+6)(x+8)\\)","\\((x+3)(x+15)\\)"], answer:"(x+5)(x+9)", solution:"5+9=14, 5·9=45."},
+// -------- utilidades ----------
+function shuffleArray(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
-  // ---------------- TRINOMIOS ax^2+bx+c ----------------
-  {section:"Trinomios forma ax^2+bx+c", example:"\\(2x^2+5x+3=(2x+3)(x+1)\\)", question:"Factoriza: \\(2x^2+7x+3\\)", options:["\\((2x+1)(x+3)\\)","\\((2x+3)(x+1)\\)","\\((2x+7)(x+1)\\)"], answer:"(2x+1)(x+3)", solution:"2x·3=6x y 1x=1x, total 7x."},
-  {section:"Trinomios forma ax^2+bx+c", example:"", question:"Factoriza: \\(3x^2+8x+4\\)", options:["\\((3x+2)(x+2)\\)","\\((3x+4)(x+1)\\)","\\((3x+1)(x+4)\\)"], answer:"(3x+2)(x+2)", solution:"3x·2=6x y 2x=2x, total 8x."},
-  {section:"Trinomios forma ax^2+bx+c", example:"", question:"Factoriza: \\(2x^2+9x+10\\)", options:["\\((2x+5)(x+2)\\)","\\((2x+10)(x+1)\\)","\\((2x+2)(x+5)\\)"], answer:"(2x+5)(x+2)", solution:"2x·2=4x y 5x=5x, total 9x."},
-  {section:"Trinomios forma ax^2+bx+c", example:"", question:"Factoriza: \\(4x^2+12x+5\\)", options:["\\((2x+1)(2x+5)\\)","\\((4x+5)(x+1)\\)","\\((4x+1)(x+5)\\)"], answer:"(2x+1)(2x+5)", solution:"2x·5=10x y 1·2x=2x, total 12x."},
-  {section:"Trinomios forma ax^2+bx+c", example:"", question:"Factoriza: \\(6x^2+17x+12\\)", options:["\\((2x+3)(3x+4)\\)","\\((6x+3)(x+4)\\)","\\((3x+2)(2x+6)\\)"], answer:"(2x+3)(3x+4)", solution:"2x·4=8x y 3x·3=9x, total 17x."},
+// -------- datos (opciones y respuestas en LaTeX exacto) ----------
+const quizData = [
+  // Factor común (5)
+  { section: "Factor Común", example: "6x^2+9x=3x(2x+3)", question: "Factoriza: \\(4x+8\\)", 
+    options: ["\\(4(x+2)\\)","\\(2(x+4)\\)","\\(8(x+0.5)\\)"], answer: "\\(4(x+2)\\)",
+    solution: "El factor común es 4: \\(4x+8=4(x+2)\\)." },
+
+  { section: "Factor Común", example: "", question: "Factoriza: \\(15x+20\\)",
+    options: ["\\(5(3x+4)\\)","\\(15(x+20)\\)","\\(10(1.5x+2)\\)"], answer: "\\(5(3x+4)\\)",
+    solution: "El factor común es 5: \\(15x+20=5(3x+4)\\)." },
+
+  { section: "Factor Común", example: "", question: "Factoriza: \\(6xy+9x\\)",
+    options: ["\\(3x(2y+3)\\)","\\(6x(y+1.5)\\)","\\(x(6y+9)\\)"], answer: "\\(3x(2y+3)\\)",
+    solution: "El factor común es \\(3x\\): \\(6xy+9x=3x(2y+3)\\)." },
+
+  { section: "Factor Común", example: "", question: "Factoriza: \\(12x^2y+18xy^2\\)",
+    options: ["\\(6xy(2x+3y)\\)","\\(3xy(4x+6y)\\)","\\(2xy(6x+9y)\\)"], answer: "\\(6xy(2x+3y)\\)",
+    solution: "El factor común es \\(6xy\\): \\(12x^2y+18xy^2=6xy(2x+3y)\\)." },
+
+  { section: "Factor Común", example: "", question: "Factoriza: \\(20x^3y^2+30x^2y^3\\)",
+    options: ["\\(10x^2y^2(2x+3y)\\)","\\(5x^2y^2(4x+6y)\\)","\\(15x^2y^2(1.33x+2y)\\)"], answer: "\\(10x^2y^2(2x+3y)\\)",
+    solution: "El factor común es \\(10x^2y^2\\): \\(20x^3y^2+30x^2y^3=10x^2y^2(2x+3y)\\)." },
+
+  // Diferencia de cuadrados (5)
+  { section: "Diferencia de Cuadrados", example: "x^2-9=(x-3)(x+3)", question: "Factoriza: \\(x^2-16\\)",
+    options: ["\\((x-4)(x+4)\\)","\\((x-2)(x+8)\\)","\\((x-8)(x+2)\\)"], answer: "\\((x-4)(x+4)\\)",
+    solution: "Es diferencia de cuadrados: \\(x^2-16=(x-4)(x+4)\\)." },
+
+  { section: "Diferencia de Cuadrados", example: "", question: "Factoriza: \\(25x^2-1\\)",
+    options: ["\\((5x-1)(5x+1)\\)","\\((x-5)(x+5)\\)","\\((25x-1)(25x+1)\\)"], answer: "\\((5x-1)(5x+1)\\)",
+    solution: "Es diferencia de cuadrados: \\(25x^2-1=(5x-1)(5x+1)\\)." },
+
+  { section: "Diferencia de Cuadrados", example: "", question: "Factoriza: \\(49y^2-81\\)",
+    options: ["\\((7y-9)(7y+9)\\)","\\((y-81)(y+81)\\)","\\((49y-81)(49y+81)\\)"], answer: "\\((7y-9)(7y+9)\\)",
+    solution: "Es diferencia de cuadrados: \\(49y^2-81=(7y-9)(7y+9)\\)." },
+
+  { section: "Diferencia de Cuadrados", example: "", question: "Factoriza: \\(x^4-25y^2\\)",
+    options: ["\\((x^2-5y)(x^2+5y)\\)","\\((x^2-25y)(x^2+25y)\\)","\\((x^2-10y)(x^2+10y)\\)"], answer: "\\((x^2-5y)(x^2+5y)\\)",
+    solution: "Notar que \\(x^4=(x^2)^2\\) y \\(25y^2=(5y)^2\\), por tanto \\(x^4-25y^2=(x^2-5y)(x^2+5y)\\)." },
+
+  { section: "Diferencia de Cuadrados", example: "", question: "Factoriza: \\(100a^2b^2-49c^2\\)",
+    options: ["\\((10ab-7c)(10ab+7c)\\)","\\((100ab-49c)(100ab+49c)\\)","\\((ab-7c)(ab+7c)\\)"], answer: "\\((10ab-7c)(10ab+7c)\\)",
+    solution: "\\(100a^2b^2=(10ab)^2\\) y \\(49c^2=(7c)^2\\), por tanto \\((10ab-7c)(10ab+7c)\\)." },
+
+  // Trinomios x^2+bx+c (5)
+  { section: "Trinomios forma x^2+bx+c", example: "x^2+5x+6=(x+2)(x+3)", question: "Factoriza: \\(x^2+7x+10\\)",
+    options: ["\\((x+2)(x+5)\\)","\\((x+1)(x+10)\\)","\\((x+7)(x+10)\\)"], answer: "\\((x+2)(x+5)\\)",
+    solution: "Buscar dos números que sumen 7 y multipliquen 10: 2 y 5. \\((x+2)(x+5)\\)." },
+
+  { section: "Trinomios forma x^2+bx+c", example: "", question: "Factoriza: \\(x^2+11x+24\\)",
+    options: ["\\((x+3)(x+8)\\)","\\((x+4)(x+6)\\)","\\((x+2)(x+12)\\)"], answer: "\\((x+3)(x+8)\\)",
+    solution: "3+8=11, 3·8=24 → \\((x+3)(x+8)\\)." },
+
+  { section: "Trinomios forma x^2+bx+c", example: "", question: "Factoriza: \\(x^2+9x+20\\)",
+    options: ["\\((x+4)(x+5)\\)","\\((x+2)(x+10)\\)","\\((x+1)(x+20)\\)"], answer: "\\((x+4)(x+5)\\)",
+    solution: "4+5=9, 4·5=20 → \\((x+4)(x+5)\\)." },
+
+  { section: "Trinomios forma x^2+bx+c", example: "", question: "Factoriza: \\(x^2+13x+40\\)",
+    options: ["\\((x+5)(x+8)\\)","\\((x+4)(x+10)\\)","\\((x+2)(x+20)\\)"], answer: "\\((x+5)(x+8)\\)",
+    solution: "5+8=13, 5·8=40 → \\((x+5)(x+8)\\)." },
+
+  { section: "Trinomios forma x^2+bx+c", example: "", question: "Factoriza: \\(x^2+14x+45\\)",
+    options: ["\\((x+5)(x+9)\\)","\\((x+6)(x+8)\\)","\\((x+3)(x+15)\\)"], answer: "\\((x+5)(x+9)\\)",
+    solution: "5+9=14, 5·9=45 → \\((x+5)(x+9)\\)." },
+
+  // Trinomios ax^2+bx+c (5)
+  { section: "Trinomios forma ax^2+bx+c", example: "2x^2+5x+3=(2x+3)(x+1)", question: "Factoriza: \\(2x^2+7x+3\\)",
+    options: ["\\((2x+1)(x+3)\\)","\\((2x+3)(x+1)\\)","\\((2x+7)(x+1)\\)"], answer: "\\((2x+1)(x+3)\\)",
+    solution: "Comprobación: \\((2x+1)(x+3)=2x^2+6x+x+3=2x^2+7x+3\\)." },
+
+  { section: "Trinomios forma ax^2+bx+c", example: "", question: "Factoriza: \\(3x^2+8x+4\\)",
+    options: ["\\((3x+2)(x+2)\\)","\\((3x+4)(x+1)\\)","\\((3x+1)(x+4)\\)"], answer: "\\((3x+2)(x+2)\\)",
+    solution: "Comprobación: \\((3x+2)(x+2)=3x^2+6x+2x+4=3x^2+8x+4\\)." },
+
+  { section: "Trinomios forma ax^2+bx+c", example: "", question: "Factoriza: \\(2x^2+9x+10\\)",
+    options: ["\\((2x+5)(x+2)\\)","\\((2x+10)(x+1)\\)","\\((2x+2)(x+5)\\)"], answer: "\\((2x+5)(x+2)\\)",
+    solution: "Comprobación: \\((2x+5)(x+2)=2x^2+4x+5x+10=2x^2+9x+10\\)." },
+
+  { section: "Trinomios forma ax^2+bx+c", example: "", question: "Factoriza: \\(4x^2+12x+5\\)",
+    options: ["\\((2x+1)(2x+5)\\)","\\((4x+5)(x+1)\\)","\\((4x+1)(x+5)\\)"], answer: "\\((2x+1)(2x+5)\\)",
+    solution: "Comprobación: \\((2x+1)(2x+5)=4x^2+10x+2x+5=4x^2+12x+5\\)." },
+
+  { section: "Trinomios forma ax^2+bx+c", example: "", question: "Factoriza: \\(6x^2+17x+12\\)",
+    options: ["\\((2x+3)(3x+4)\\)","\\((6x+3)(x+4)\\)","\\((3x+2)(2x+6)\\)"], answer: "\\((2x+3)(3x+4)\\)",
+    solution: "Comprobación: \\((2x+3)(3x+4)=6x^2+8x+9x+12=6x^2+17x+12\\)." }
 ];
 
-// ==========================
-// GENERADOR DE HTML
-// ==========================
-const container = document.getElementById("questions");
+// -------- generar HTML (con mezcla aleatoria de opciones) ----------
+const container = document.getElementById('questions');
 let currentSection = "";
-quizData.forEach((q,index)=>{
-  if(q.section !== currentSection){
+quizData.forEach((q, idx) => {
+  // si nueva sección, agregar encabezado + ejemplo (solo si ejemplo no vacio)
+  if (q.section !== currentSection) {
     currentSection = q.section;
-    const sectionDiv = document.createElement("div");
-    sectionDiv.classList.add("section");
+    const sectionDiv = document.createElement('div');
+    sectionDiv.className = 'section';
     sectionDiv.innerHTML = `<h2>${q.section}</h2>
-    <div class="example"><b>Ejemplo:</b> \\(${q.example}\\)</div>`;
+                            ${q.example ? `<div class="example"><strong>Ejemplo:</strong> \\(${q.example}\\)</div>` : ''}`;
     container.appendChild(sectionDiv);
   }
-  const div = document.createElement("div");
-  div.classList.add("question");
-  div.id = `q${index+1}`;
-  div.innerHTML = `
-    <p>${index+1}. ${q.question}</p>
-    ${q.options.map(opt => `<input type="radio" name="q${index+1}" value="${opt}"> ${opt}<br>`).join('')}
-    <p class="feedback" id="feedback${index+1}"></p>
-    <p class="solution" id="solution${index+1}" style="display:none;">${q.solution}</p>
-  `;
-  container.appendChild(div);
+
+  // mezclar opciones
+  const shuffled = shuffleArray(q.options);
+
+  // crear contenedor de pregunta
+  const qDiv = document.createElement('div');
+  qDiv.className = 'question';
+  qDiv.id = `q${idx+1}`;
+
+  // generar HTML de opciones (valor = texto LaTeX exacto)
+  const optsHtml = shuffled.map((opt, j) => {
+    // cada radio value es exactamente la etiqueta LaTeX (ej. "\\(4(x+2)\\)")
+    return `<label class="option"><input type="radio" name="q${idx+1}" value="${opt}"> ${opt}</label>`;
+  }).join('');
+
+  // solución (oculta hasta que se muestre)
+  const solutionHtml = q.solution ? `<div class="solution" id="solution${idx+1}">${q.solution}</div>` : '';
+
+  qDiv.innerHTML = `<p><strong>${idx+1}.</strong> ${q.question}</p>
+                    ${optsHtml}
+                    <div class="feedback" id="feedback${idx+1}"></div>
+                    ${solutionHtml}`;
+  container.appendChild(qDiv);
 });
 
-// ==========================
-// FUNCIÓN DE REVISIÓN
-// ==========================
-function checkAnswers() {
-  let score = 0;
-  let allAnswered = true;
-  quizData.forEach((q,index)=>{
-    const selected = document.querySelector(`input[name="q${index+1}"]:checked`);
-    const feedback = document.getElementById(`feedback${index+1}`);
-    const solution = document.getElementById(`solution${index+1}`);
-    if(selected){
-      if(selected.value === q.answer){
-        score++;
-        feedback.innerHTML = `<span class="correct">Correcto ✅</span>`;
-      } else {
-        feedback.innerHTML = `<span class="incorrect">Incorrecto ❌</span>`;
-        solution.style.display="block";
-      }
-    } else {
-      allAnswered=false;
-      feedback.innerHTML = `<span class="incorrect">No seleccionaste respuesta</span>`;
-    }
-  });
-  if(!allAnswered){
-    document.getElementById("result").innerHTML = "⚠️ Debes responder todos los ejercicios antes de calificar.";
-  } else {
-    document.getElementById("result").innerHTML = `Tu calificación: ${score} de ${quizData.length}`;
-  }
+// Solicitar a MathJax renderizar el contenido dinámico
+if (window.MathJax && MathJax.typesetPromise) {
+  MathJax.typesetPromise();
 }
+
+// -------- verificar respuestas (solo si todas respondidas) ----------
+document.getElementById('checkBtn').addEventListener('click', function(){
+  const total = quizData.length;
+  // verificar que todas las preguntas tengan respuesta seleccionada
+  let allAnswered = true;
+  for (let i = 1; i <= total; i++) {
+    const sel = document.querySelector(`input[name="q${i}"]:checked`);
+    if (!sel) { allAnswered = false; break; }
+  }
+  const resultDiv = document.getElementById('result');
+  // si falta alguna, mostrar aviso y no calificar ni mostrar soluciones
+  if (!allAnswered) {
+    resultDiv.innerHTML = "⚠️ Debes responder <strong>todas</strong> las preguntas antes de verificar. Revisa que no falte ninguna.";
+    // limpiar cualquier feedback/solution anterior
+    for (let i = 1; i <= total; i++) {
+      const fb = document.getElementById(`feedback${i}`);
+      const sol = document.getElementById(`solution${i}`);
+      if (fb) fb.innerHTML = "";
+      if (sol) sol.style.display = 'none';
+    }
+    return;
+  }
+
+  // si todas respondidas, calificar y mostrar feedback + soluciones donde corresponda
+  let score = 0;
+  for (let i = 0; i < quizData.length; i++) {
+    const qIndex = i + 1;
+    const selected = document.querySelector(`input[name="q${qIndex}"]:checked`);
+    const selectedValue = selected ? selected.value : null;
+    const feedbackEl = document.getElementById(`feedback${qIndex}`);
+    const solEl = document.getElementById(`solution${qIndex}`);
+
+    // comparar con la etiqueta de respuesta (todas usan LaTeX exacto)
+    if (selectedValue === quizData[i].answer) {
+      score++;
+      feedbackEl.innerHTML = `<span class="correct">Correcto ✅</span>`;
+      // ocultar solución por si estaba visible de intento anterior
+      if (solEl) solEl.style.display = 'none';
+    } else {
+      feedbackEl.innerHTML = `<span class="incorrect">Incorrecto ❌. Se muestra la solución:</span>`;
+      if (solEl) solEl.style.display = 'block';
+    }
+  }
+
+  resultDiv.innerHTML = `Tu calificación: <strong>${score}</strong> de <strong>${quizData.length}</strong>.`;
+
+  // volver a renderizar MathJax para mostrar soluciones y etiquetas LaTeX recién añadidas
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise();
+  }
+});
 </script>
 
 </body>
